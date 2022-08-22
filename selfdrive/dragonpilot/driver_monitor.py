@@ -6,9 +6,9 @@ EventName = car.CarEvent.EventName
 from common.realtime import DT_DMON # 0.05 = 20hz
 
 # ref (page15-16): https://eur-lex.europa.eu/legal-content/EN/TXT/PDF/?uri=CELEX:42018X1947&rid=2
-_AWARENESS_TIME = 30.  # 30 secs limit without user touching steering wheels make the car enter a terminal status
-_AWARENESS_PRE_TIME_TILL_TERMINAL = 15.  # a first alert is issued 15s before expiration
-_AWARENESS_PROMPT_TIME_TILL_TERMINAL = 6.  # a second alert is issued 6s before start decelerating the car
+_AWARENESS_TIME = 300.  # 30 secs limit without user touching steering wheels make the car enter a terminal status
+_AWARENESS_PRE_TIME_TILL_TERMINAL = 150.  # a first alert is issued 15s before expiration
+_AWARENESS_PROMPT_TIME_TILL_TERMINAL = 60.  # a second alert is issued 6s before start decelerating the car
 
 class DriverStatus():
   def __init__(self):
@@ -32,21 +32,27 @@ class DriverStatus():
     awareness_prev = self.awareness
 
     if not (standstill and self.awareness - self.step_change <= self.threshold_prompt):
-      self.awareness = max(self.awareness - self.step_change, -0.1)
+      # self.awareness = max(self.awareness - self.step_change, -0.1)
+      self.awareness = 1.
 
     alert = None
     if self.awareness <= 0.:
       # terminal red alert: disengagement required
-      alert = EventName.driverUnresponsive
-      self.terminal_time += 1
-      if awareness_prev > 0.:
-        self.terminal_alert_cnt += 1
+      # alert = EventName.driverUnresponsive
+      # self.terminal_time += 1
+      # if awareness_prev > 0.:
+      #   self.terminal_alert_cnt += 1
+      self.awareness = 1.
     elif self.awareness <= self.threshold_prompt:
       # prompt orange alert
-      alert = EventName.promptDriverUnresponsive
+      # alert = EventName.promptDriverUnresponsive
+      self.threshold_prompt = _AWARENESS_PROMPT_TIME_TILL_TERMINAL / _AWARENESS_TIME
+      self.awareness = 1.
     elif self.awareness <= self.threshold_pre:
       # pre green alert
-      alert = EventName.preDriverUnresponsive
+      # alert = EventName.preDriverUnresponsive
+      self.threshold_pre = _AWARENESS_PRE_TIME_TILL_TERMINAL / _AWARENESS_TIME
+      self.awareness = 1.
 
     # print("trigger to green in: %s secs" % ((self.threshold_pre - self.awareness) / self.step_change * DT_DMON))
     # print("trigger to orange in: %s secs" % ((self.threshold_prompt - self.awareness) / self.step_change * DT_DMON))
@@ -58,4 +64,3 @@ class DriverStatus():
 
 if __name__ == "__main__":
   pass
-
